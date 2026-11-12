@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Snooker Championship Pro - Mobile & Desktop Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #07090e;
+            color: #fff;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 👑 ANIMATED INTRO & MENU SCREEN */
+        #menuScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #0a2e16 0%, #05140a 60%, #020503 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        #menuScreen.hide {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, #d4af37, #aa7c11);
+            color: #000;
+            padding: 4px 16px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 8px;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .logo-title {
+            font-size: clamp(28px, 6vw, 46px);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin: 0;
+            background: linear-gradient(to right, #ffffff, #00cec9, #6c5ce7, #ffffff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shineText 4s linear infinite;
+            filter: drop-shadow(0 4px 15px rgba(0, 206, 201, 0.5));
+        }
+
+        @keyframes shineText {
+            to { background-position: 200% center; }
+        }
+
+        .color-dot {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .color-dot.active {
+            border-color: #fff;
+            transform: scale(1.15);
+            box-shadow: 0 0 15px rgba(255,255,255,0.7);
+        }
+
+        /* 📱 RESPONSIVE GAME CANVAS CONTAINER */
+        #gameArea {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            padding: 8px;
+            position: relative;
+        }
+
+        #canvasWrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 100%;
+            max-height: 70vh;
+            touch-action: none;
+        }
+
+        #gameCanvas {
+            background-color: #064415;
+            border: clamp(8px, 2vw, 20px) solid #2d1a0f; 
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+            touch-action: none;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* 🕹️ TOUCH POWER CONTROL SLIDER */
+        .power-slider-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 920px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        input[type=range].power-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 14px;
+            border-radius: 7px;
+            background: linear-gradient(90deg, #00cec9 0%, #fbc531 60%, #ff7675 100%);
+            outline: none;
+            opacity: 0.9;
+            transition: opacity .2s;
+        }
+
+        input[type=range].power-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid #00cec9;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* 🎯 ON-SCREEN TOUCH SPIN D-PAD MODAL */
+        #spinModal {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: rgba(15, 20, 28, 0.95);
+            border: 2px solid #00cec9;
+            border-radius: 18px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        #spinModal.hidden-spin {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.8) translateY(20px);
+        }
+
+        .dpad-btn {
+            background: #252a38;
+            color: #00cec9;
+            border: 1px solid #3b4254;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            touch-action: manipulation;
+        }
+
+        .dpad-btn:active {
+            background: #00cec9;
+            color: #111;
+        }
+
+        /* 📲 PORTRAIT LANDSCAPE ORIENTATION BANNER */
+        #orientationBanner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #e67e22;
+            color: #fff;
+            text-align: center;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PORTRAIT ORIENTATION NOTICE BANNER -->
+    <div id="orientationBanner">
+        🔄 For the best Snooker experience, please rotate your phone to Landscape mode!
+    </div>
+
+    <!-- MAIN MENU SCREEN -->
+    <div id="menuScreen">
+        <div class="text-center mb-4">
+            <div class="logo-badge">Mobile & Desktop Pro</div>
+            <h2 class="logo-title">Master Snooker</h2>
+            <div class="text-xs text-gray-400 tracking-widest uppercase mt-1">Touch & Aim Championship</div>
+        </div>
+
+        <div class="bg-gray-900/90 border border-gray-800 p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center mb-5">
+            <div class="mb-4 text-left">
+                <label class="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Game Mode</label>
+                <select id="gameModeSelect" class="w-full bg-gray-800 text-white border border-gray-700 p-3 rounded-xl outline-none focus:border-cyan-400 text-sm">
+                    <option value="vsComputer">🎮 vs Computer (AI Grandmaster)</option>
+                    <option value="passAndPlay">👥 Pass & Play (Local 2 Players)</option>
+                </select>
+            </div>
+
+            <div class="mb-4 text-left">
+                <label class="block text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Table Cloth Color</label>
+                <div class="color-picker flex justify-around">
+                    <div class="color-dot active" data-color="#064415" style="background-color: #064415;" title="Classic Green"></div>
+                    <div class="color-dot" data-color="#0f3460" style="background-color: #0f3460;" title="Royal Blue"></div>
+                    <div class="color-dot" data-color="#6b0e1a" style="background-color: #6b0e1a;" title="Crimson Red"></div>
+                    <div class="color-dot" data-color="#2c3e50" style="background-color: #2c3e50;" title="Midnight Slate"></div>
+                </div>
+            </div>
+        </div>
+
+        <button class="bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white px-8 py-3.5 rounded-full font-bold uppercase tracking-widest text-base shadow-lg shadow-cyan-500/30 transform active:scale-95 transition" id="startBtn">
+            Start Match
+        </button>
+    </div>
+
+    <!-- GAME UI AREA -->
+    <div id="gameArea">
+        <!-- SCOREBOARD HUD -->
+        <div id="scoreboard" class="flex items-center justify-between gap-2 text-xs md:text-sm font-bold bg-gray-900/90 px-4 py-2 rounded-full border border-gray-700 w-full max-w-4xl mb-2 shadow-lg">
+            <div id="player1Label" class="text-cyan-400">P1: <span id="playerScore" class="text-white text-base">0</span></div>
+            <div id="player2Label" class="text-indigo-400">AI: <span id="aiScore" class="text-white text-base">0</span></div>
+            <div class="text-yellow-400 truncate"><span id="status">Your Turn</span></div>
+            
+            <div class="flex items-center gap-2">
+                <button id="toggleSpinModalBtn" class="bg-gray-800 border border-cyan-500 text-cyan-400 text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 active:bg-cyan-500 active:text-black">
+                    🎯 Spin (<span id="spinDisplay">NONE</span>)
+                </button>
+                <button id="mainMenuReturnBtn" class="bg-gray-800 text-gray-300 border border-gray-600 text-xs px-2.5 py-1 rounded-lg active:bg-red-600 active:text-white">
+                    Menu
+                </button>
+            </div>
+        </div>
+
+        <!-- CANVAS TABLE WRAPPER -->
+        <div id="canvasWrapper">
+            <canvas id="gameCanvas" width="920" height="460"></canvas>
+        </div>
+
+        <!-- TOUCH CONTROL POWER CHARGE SLIDER & SHOOT BUTTON -->
+        <div class="power-slider-wrapper">
+            <span class="text-xs font-bold text-gray-400 uppercase">Power:</span>
+            <input type="range" id="mobilePowerSlider" min="5" max="38" value="20" class="power-range">
+            <button id="mobileShootBtn" class="bg-gradient-to-r from-red-500 to-pink-600 text-white font-black px-5 py-2 rounded-xl text-sm uppercase shadow-lg shadow-red-500/30 active:scale-95">
+                HIT 🎱
+            </button>
+        </div>
+    </div>
+
+    <!-- ON-SCREEN TOUCH SPIN D-PAD MODAL -->
+    <div id="spinModal" class="hidden-spin">
+        <div class="text-xs font-bold text-cyan-400 mb-2 uppercase tracking-wide">Cue Ball Spin</div>
+        <div class="grid grid-cols-3 gap-1.5 items-center justify-center">
+            <div></div>
+            <button class="dpad-btn" id="spinUp">▲</button>
+            <div></div>
+            <button class="dpad-btn" id="spinLeft">◀</button>
+            <button class="dpad-btn text-xs" id="spinReset">🔴</button>
+            <button class="dpad-btn" id="spinRight">▶</button>
+            <div></div>
+            <button class="dpad-btn" id="spinDown">▼</button>
+            <div></div>
+        </div>
+        <button id="closeSpinModalBtn" class="mt-2 text-xs text-gray-400 underline">Close</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Dynamic Mobile Scale Handlers
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const orientationBanner = document.getElementById('orientationBanner');
+
+        const playerScoreEl = document.getElementById('playerScore');
+        const aiScoreEl = document.getElementById('aiScore');
+        const statusEl = document.getElementById('status');
+        const spinDisplayEl = document.getElementById('spinDisplay');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameModeSelect = document.getElementById('gameModeSelect');
+        const startBtn = document.getElementById('startBtn');
+        const colorDots = document.querySelectorAll('.color-dot');
+        const player1Label = document.getElementById('player1Label');
+        const player2Label = document.getElementById('player2Label');
+
+        // Touch Control Elements
+        const mobilePowerSlider = document.getElementById('mobilePowerSlider');
+        const mobileShootBtn = document.getElementById('mobileShootBtn');
+        const spinModal = document.getElementById('spinModal');
+        const toggleSpinModalBtn = document.getElementById('toggleSpinModalBtn');
+        const closeSpinModalBtn = document.getElementById('closeSpinModalBtn');
+        const mainMenuReturnBtn = document.getElementById('mainMenuReturnBtn');
+
+        // Game State Variables
+        let gameActive = false;
+        let selectedTableColor = "#064415"; 
+        let currentGameMode = "vsComputer"; 
+
+        const BALL_RADIUS = 9.5;
+        let FRICTION = 0.992; 
+        let playerScore = 0;
+        let aiScore = 0;
+        let currentTurn = 'player'; 
+        let hasPottedThisTurn = false;
+        let aiThinking = false;
+        
+        let aimPoint = { x: 460, y: 230 };
+        let isTouchAiming = false;
+        let ballSpin = { top: 0, side: 0 }; 
+
+        const POCKET_RADIUS = 19;
+        const pockets = [
+            { x: 4, y: 4 }, { x: 460, y: -2 }, { x: 916, y: 4 },
+            { x: 4, y: 456 }, { x: 460, y: 462 }, { x: 916, y: 456 }
+        ];
+
+        // Web Audio Synthesizer
+        let audioCtx;
+        function playSound(type, volume = 1) {
+            try {
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                
+                if(volume < 0.05) volume = 0.05;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'hit') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(130, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(35, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(volume * 0.4, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+                } else if (type === 'pot') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(260, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.35);
+                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.35);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'cushion') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.12);
+                    gain.gain.setValueAtTime(volume * 0.3, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.12);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+                }
+            } catch (e) {}
+        }
+
+        // Ball Entity Engine
+        class Ball {
+            constructor(x, y, color, points, isCue = false) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.spinTop = 0;   
+                this.spinSide = 0;
+                this.radius = BALL_RADIUS;
+                this.color = color;
+                this.points = points;
+                this.isCue = isCue;
+                this.isPotted = false;
+            }
+
+            draw() {
+                if (this.isPotted) return;
+
+                // Ball Shadow
+                ctx.beginPath();
+                ctx.arc(this.x + 3, this.y + 3, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.fill();
+
+                // Ball Body
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+
+                // 3D Shine Highlight
+                let gradient = ctx.createRadialGradient(
+                    this.x - this.radius/2.8, this.y - this.radius/2.8, 1,
+                    this.x, this.y, this.radius
+                );
+                gradient.addColorStop(0, 'rgba(255,255,255,0.7)');
+                gradient.addColorStop(0.25, 'rgba(255,255,255,0.15)');
+                gradient.addColorStop(0.85, 'rgba(0,0,0,0.3)');
+                gradient.addColorStop(1, 'rgba(0,0,0,0.65)');
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Cue Spin Indicator Dot
+                if (this.isCue && (Math.abs(ballSpin.top) > 0 || Math.abs(ballSpin.side) > 0)) {
+                    ctx.beginPath();
+                    ctx.arc(this.x + ballSpin.side * 4, this.y - ballSpin.top * 4, 2, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff7675';
+                    ctx.fill();
+                }
+            }
+
+            update() {
+                if (this.isPotted) return;
+
+                if (this.isCue) {
+                    this.vx += this.spinSide * 0.018;
+                    this.vy -= this.spinTop * 0.018;
+                    this.spinTop *= 0.95;
+                    this.spinSide *= 0.95;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                this.vx *= FRICTION;
+                this.vy *= FRICTION;
+
+                if (Math.abs(this.vx) < 0.015) this.vx = 0;
+                if (Math.abs(this.vy) < 0.015) this.vy = 0;
+
+                // Cushion Bounces
+                if (this.x - this.radius < 0) { this.x = this.radius; this.vx = -this.vx; if(this.isCue) this.vy += this.spinSide * 2.5; playSound('cushion', Math.abs(this.vx)); }
+                if (this.x + this.radius > canvas.width) { this.x = canvas.width - this.radius; this.vx = -this.vx; if(this.isCue) this.vy -= this.spinSide * 2.5; playSound('cushion', Math.abs(this.vx)); }
+                if (this.y - this.radius < 0) { this.y = this.radius; this.vy = -this.vy; if(this.isCue) this.vx -= this.spinSide * 2.5; playSound('cushion', Math.abs(this.vx)); }
+                if (this.y + this.radius > canvas.height) { this.y = canvas.height - this.radius; this.vy = -this.vy; if(this.isCue) this.vx += this.spinSide * 2.5; playSound('cushion', Math.abs(this.vx)); }
+            }
+        }
+
+        let balls = [];
+
+        function initGame() {
+            balls = [];
+            playerScore = 0; aiScore = 0;
+            currentTurn = 'player'; hasPottedThisTurn = false; aiThinking = false;
+            ballSpin = { top: 0, side: 0 };
+            
+            if(currentGameMode === "vsComputer") {
+                player1Label.innerHTML = `P1: <span id="playerScore" class="text-white text-base">0</span>`;
+                player2Label.innerHTML = `AI: <span id="aiScore" class="text-white text-base">0</span>`;
+                statusEl.innerText = "Your Turn";
+            } else {
+                player1Label.innerHTML = `P1: <span id="playerScore" class="text-white text-base">0</span>`;
+                player2Label.innerHTML = `P2: <span id="aiScore" class="text-white text-base">0</span>`;
+                statusEl.innerText = "Player 1 Turn";
+            }
+            
+            canvas.style.backgroundColor = selectedTableColor;
+
+            // Cue ball
+            balls.push(new Ball(190, canvas.height / 2, '#ffffff', 0, true));
+            aimPoint = { x: 460, y: canvas.height / 2 };
+
+            // Colored Balls
+            balls.push(new Ball(230, canvas.height / 2, '#7f8c8d', 4));       
+            balls.push(new Ball(230, canvas.height / 2 - 55, '#f1c40f', 2));  
+            balls.push(new Ball(230, canvas.height / 2 + 55, '#2ecc71', 3));  
+            balls.push(new Ball(460, canvas.height / 2, '#3498db', 5));       
+            balls.push(new Ball(650, canvas.height / 2, '#e84393', 6));       
+            balls.push(new Ball(830, canvas.height / 2, '#2c3e50', 7));       
+
+            // Reds Triangle
+            const startX = 672;
+            const startY = canvas.height / 2;
+            const spacing = BALL_RADIUS * 2 + 0.4;
+
+            for (let col = 0; col < 5; col++) {
+                for (let row = 0; row <= col; row++) {
+                    let x = startX + col * (spacing * 0.86);
+                    let y = startY + (row - col / 2) * spacing;
+                    balls.push(new Ball(x, y, '#d63031', 1)); 
+                }
+            }
+            updateSpinHUD();
+        }
+
+        function getCueBall() { return balls.find(b => b.isCue); }
+        function areBallsMoving() { return balls.some(b => !b.isPotted && (b.vx !== 0 || b.vy !== 0)); }
+
+        // 📱 TOUCH & MOUSE POSITION TRANSLATOR
+        function updateAimPosition(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            aimPoint.x = (clientX - rect.left) * scaleX;
+            aimPoint.y = (clientY - rect.top) * scaleY;
+        }
+
+        // TOUCH EVENTS HANDLERS
+        canvas.addEventListener('touchstart', (e) => {
+            if (!gameActive || areBallsMoving()) return;
+            if (currentGameMode === 'vsComputer' && currentTurn !== 'player') return;
+            e.preventDefault();
+            isTouchAiming = true;
+            updateAimPosition(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isTouchAiming || !gameActive || areBallsMoving()) return;
+            e.preventDefault();
+            updateAimPosition(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            isTouchAiming = false;
+        });
+
+        // DESKTOP MOUSE EVENT HANDLERS
+        canvas.addEventListener('mousemove', (e) => {
+            if (!gameActive || areBallsMoving()) return;
+            updateAimPosition(e.clientX, e.clientY);
+        });
+
+        // TRIGGER SHOT FROM MOBILE BUTTON OR TAP
+        mobileShootBtn.addEventListener('click', () => {
+            if (!gameActive || areBallsMoving()) return;
+            if (currentGameMode === 'vsComputer' && currentTurn !== 'player') return;
+            
+            const power = parseFloat(mobilePowerSlider.value);
+            executeShot(aimPoint.x, aimPoint.y, power);
+        });
+
+        function executeShot(targetX, targetY, power) {
+            const cueBall = getCueBall();
+            if (cueBall && power > 1) {
+                let dx = targetX - cueBall.x;
+                let dy = targetY - cueBall.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist === 0) return;
+
+                let angleX = dx / dist;
+                let angleY = dy / dist;
+
+                cueBall.vx = angleX * power * 0.65;
+                cueBall.vy = angleY * power * 0.65;
+                
+                cueBall.spinTop = ballSpin.top * (power * 0.4);
+                cueBall.spinSide = ballSpin.side * (power * 0.4);
+
+                playSound('hit', power / 38);
+                hasPottedThisTurn = false;
+                ballSpin = { top: 0, side: 0 };
+                updateSpinHUD();
+            }
+        }
+
+        // AI PLAYER ENGINE
+        function makeAIMove() {
+            if (aiThinking || areBallsMoving()) return;
+            aiThinking = true;
+            statusEl.innerText = "AI thinking...";
+
+            setTimeout(() => {
+                const cueBall = getCueBall();
+                const targetBalls = balls.filter(b => !b.isCue && !b.isPotted);
+
+                if (cueBall && targetBalls.length > 0) {
+                    let idealTargetBall = null;
+                    let targetPocket = null;
+                    let recordScore = -Infinity;
+
+                    for (let i = 0; i < Math.min(targetBalls.length, 8); i++) {
+                        let ball = targetBalls[i];
+                        pockets.forEach(pocket => {
+                            let b2pX = pocket.x - ball.x;
+                            let b2pY = pocket.y - ball.y;
+                            let distB2P = Math.sqrt(b2pX * b2pX + b2pY * b2pY);
+                            
+                            let c2bX = ball.x - cueBall.x;
+                            let c2bY = ball.y - cueBall.y;
+                            let distC2B = Math.sqrt(c2bX * c2bX + c2bY * c2bY);
+
+                            let structuralAlignment = (c2bX/distC2B) * (b2pX/distB2P);
+                            
+                            if (structuralAlignment > recordScore) {
+                                recordScore = structuralAlignment;
+                                idealTargetBall = ball;
+                                targetPocket = pocket;
+                            }
+                        });
+                    }
+
+                    if (idealTargetBall) {
+                        let dx = targetPocket.x - idealTargetBall.x;
+                        let dy = targetPocket.y - idealTargetBall.y;
+                        let dLen = Math.sqrt(dx*dx + dy*dy);
+                        
+                        let ghostX = idealTargetBall.x - (dx / dLen) * (BALL_RADIUS * 2);
+                        let ghostY = idealTargetBall.y - (dy / dLen) * (BALL_RADIUS * 2);
+
+                        let calculationSkew = 1.5; 
+                        let finalTargetX = ghostX + (Math.random() * calculationSkew - calculationSkew/2);
+                        let finalTargetY = ghostY + (Math.random() * calculationSkew - calculationSkew/2);
+
+                        let finalVecX = finalTargetX - cueBall.x;
+                        let finalVecY = finalTargetY - cueBall.y;
+                        let shotDist = Math.sqrt(finalVecX*finalVecX + finalVecY*finalVecY);
+
+                        let computedPower = Math.min(38, Math.max(15, shotDist * 0.05 + 13));
+                        executeShot(finalTargetX, finalTargetY, computedPower);
+                    }
+                }
+                aiThinking = false;
+            }, 1200);
+        }
+
+        // PHYSICS & COLLISIONS
+        function handleCollisions() {
+            for (let i = 0; i < balls.length; i++) {
+                if (balls[i].isPotted) continue;
+                for (let j = i + 1; j < balls.length; j++) {
+                    if (balls[j].isPotted) continue;
+
+                    let b1 = balls[i];
+                    let b2 = balls[j];
+
+                    let dx = b2.x - b1.x;
+                    let dy = b2.y - b1.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < b1.radius + b2.radius) {
+                        let overlap = (b1.radius + b2.radius) - distance;
+                        let nx = dx / distance;
+                        let ny = dy / distance;
+
+                        b1.x -= nx * overlap * 0.5;
+                        b1.y -= ny * overlap * 0.5;
+                        b2.x += nx * overlap * 0.5;
+                        b2.y += ny * overlap * 0.5;
+
+                        let kx = b1.vx - b2.vx;
+                        let ky = b1.vy - b2.vy;
+                        let p = 2 * (nx * kx + ny * ky) / 2;
+
+                        b1.vx -= p * nx;
+                        b1.vy -= p * ny;
+                        b2.vx += p * nx;
+                        b2.vy += p * ny;
+
+                        if(b1.isCue) {
+                            b1.vx -= nx * b1.spinTop * 0.4;
+                            b1.vy -= ny * b1.spinTop * 0.4;
+                            b1.spinTop = 0; 
+                        }
+
+                        let compositeImpact = Math.sqrt(b1.vx*b1.vx + b1.vy*b1.vy);
+                        playSound('hit', Math.min(1, compositeImpact * 0.16));
+                    }
+                }
+            }
+        }
+
+        function checkPockets() {
+            balls.forEach(ball => {
+                if (ball.isPotted) return;
+
+                pockets.forEach(pocket => {
+                    let dx = ball.x - pocket.x;
+                    let dy = ball.y - pocket.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < POCKET_RADIUS) {
+                        ball.vx = 0; ball.vy = 0;
+                        ball.isPotted = true;
+                        playSound('pot');
+
+                        if (ball.isCue) {
+                            if (currentTurn === 'player') playerScore = Math.max(0, playerScore - 4);
+                            else aiScore = Math.max(0, aiScore - 4);
+                            updateScoreboard();
+
+                            setTimeout(() => {
+                                ball.x = 190; ball.y = canvas.height / 2;
+                                ball.isPotted = false;
+                                switchTurn();
+                            }, 1200);
+                        } else {
+                            hasPottedThisTurn = true;
+                            if (currentTurn === 'player') playerScore += ball.points;
+                            else aiScore += ball.points;
+                            updateScoreboard();
+                        }
+                    }
+                });
+            });
+        }
+
+        function updateScoreboard() {
+            const p1 = document.getElementById('playerScore');
+            const p2 = document.getElementById('aiScore');
+            if(p1) p1.innerText = playerScore;
+            if(p2) p2.innerText = aiScore;
+        }
+
+        function switchTurn() {
+            if (currentTurn === 'player') {
+                currentTurn = 'ai';
+                statusEl.innerText = currentGameMode === "vsComputer" ? "AI's Turn" : "P2 Turn";
+            } else {
+                currentTurn = 'player';
+                statusEl.innerText = currentGameMode === "vsComputer" ? "Your Turn" : "P1 Turn";
+            }
+        }
+
+        let turnSwitchChecked = false;
+
+        function handleTurnLogic() {
+            if (areBallsMoving()) {
+                turnSwitchChecked = false;
+                return;
+            }
+
+            if (!turnSwitchChecked && !aiThinking) {
+                turnSwitchChecked = true;
+                if (!hasPottedThisTurn) {
+                    switchTurn();
+                } else {
+                    statusEl.innerText = currentTurn === 'player' ? "Continuous Turn!" : "P2 Continues!";
+                    hasPottedThisTurn = false; 
+                }
+            }
+
+            if (currentGameMode === "vsComputer" && currentTurn === 'ai' && !areBallsMoving()) {
+                makeAIMove();
+            }
+        }
+
+        function drawTableDesign() {
+            pockets.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, POCKET_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = '#090a0f';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#d4af37'; 
+                ctx.stroke();
+            });
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.11)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(230, 0);
+            ctx.lineTo(230, canvas.height);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(230, canvas.height/2, 65, Math.PI/2, -Math.PI/2);
+            ctx.stroke();
+        }
+
+        function drawCueStickAndAim() {
+            const cueBall = getCueBall();
+            if (!cueBall || areBallsMoving()) return;
+
+            let dx = aimPoint.x - cueBall.x;
+            let dy = aimPoint.y - cueBall.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > 0) {
+                let nx = dx / dist;
+                let ny = dy / dist;
+
+                if (currentGameMode === 'passAndPlay' || (currentGameMode === 'vsComputer' && currentTurn === 'player')) {
+                    let rayLength = 220;
+                    let endRayX = cueBall.x + nx * rayLength;
+                    let endRayY = cueBall.y + ny * rayLength;
+
+                    const internalTargets = balls.filter(b => !b.isCue && !b.isPotted);
+                    let closestIntersectBall = null;
+                    let minIntersectDist = rayLength;
+
+                    internalTargets.forEach(ball => {
+                        let ballToCueX = ball.x - cueBall.x;
+                        let ballToCueY = ball.y - cueBall.y;
+                        let projectionLength = ballToCueX * nx + ballToCueY * ny;
+
+                        if (projectionLength > 0 && projectionLength < minIntersectDist) {
+                            let perpDistSq = (ballToCueX * ballToCueX + ballToCueY * ballToCueY) - (projectionLength * projectionLength);
+                            if (perpDistSq < (BALL_RADIUS * 2) * (BALL_RADIUS * 2)) {
+                                minIntersectDist = projectionLength;
+                                closestIntersectBall = ball;
+                            }
+                        }
+                    });
+
+                    if (closestIntersectBall) {
+                        endRayX = cueBall.x + nx * minIntersectDist;
+                        endRayY = cueBall.y + ny * minIntersectDist;
+                    }
+
+                    // Aim Guideline
+                    ctx.beginPath();
+                    ctx.moveTo(cueBall.x, cueBall.y);
+                    ctx.lineTo(endRayX, endRayY);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.lineWidth = 1.2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Cue Stick Render
+                    let cueGap = BALL_RADIUS + 10;
+                    let totalCueLen = 270;
+
+                    let sX = cueBall.x - nx * cueGap;
+                    let sY = cueBall.y - ny * cueGap;
+                    let eX = cueBall.x - nx * (cueGap + totalCueLen);
+                    let eY = cueBall.y - ny * (cueGap + totalCueLen);
+
+                    ctx.beginPath();
+                    ctx.moveTo(sX, sY);
+                    ctx.lineTo(eX, eY);
+                    ctx.lineWidth = 4.5;
+                    ctx.strokeStyle = '#f5f6fa'; 
+                    ctx.stroke();
+
+                    let handleStartOffset = cueGap + 120;
+                    ctx.beginPath();
+                    ctx.moveTo(cueBall.x - nx * handleStartOffset, cueBall.y - ny * handleStartOffset);
+                    ctx.lineTo(eX, eY);
+                    ctx.lineWidth = 5.5;
+                    ctx.strokeStyle = '#4a2711'; 
+                    ctx.stroke();
+
+                    // Hand Grip Asset Visual
+                    let handCenterOffset = cueGap + 170; 
+                    let handX = cueBall.x - nx * handCenterOffset;
+                    let handY = cueBall.y - ny * handCenterOffset;
+
+                    ctx.save();
+                    ctx.translate(handX, handY);
+                    ctx.rotate(Math.atan2(ny, nx));
+
+                    ctx.fillStyle = '#ffdbac'; 
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 14, 9, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#e0b386'; 
+                    for(let i = -6; i <= 6; i += 4) {
+                        ctx.beginPath();
+                        ctx.arc(i, -7, 3.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.fillStyle = '#ffdbac';
+                    ctx.beginPath();
+                    ctx.ellipse(-2, 5, 6, 4, Math.PI/4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#222f3e'; 
+                    ctx.fillRect(-22, -10, 10, 20);
+
+                    ctx.restore();
+                }
+            }
+        }
+
+        // MAIN LOOP
+        function gameLoop() {
+            if (!gameActive) return; 
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTableDesign();
+
+            balls.forEach(ball => {
+                ball.update();
+                ball.draw();
+            });
+
+            handleCollisions();
+            checkPockets();
+            drawCueStickAndAim();
+            handleTurnLogic();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 🟢 MENU INTERACTION & ORIENTATION CONTROLS
+        colorDots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                colorDots.forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+                selectedTableColor = dot.getAttribute('data-color');
+            });
+        });
+
+        // SPIN CONTROLLER MODAL LOGIC
+        toggleSpinModalBtn.addEventListener('click', () => {
+            spinModal.classList.toggle('hidden-spin');
+        });
+        closeSpinModalBtn.addEventListener('click', () => {
+            spinModal.classList.add('hidden-spin');
+        });
+
+        document.getElementById('spinUp').addEventListener('click', () => { ballSpin.top = Math.min(1, ballSpin.top + 0.35); updateSpinHUD(); });
+        document.getElementById('spinDown').addEventListener('click', () => { ballSpin.top = Math.max(-1, ballSpin.top - 0.35); updateSpinHUD(); });
+        document.getElementById('spinLeft').addEventListener('click', () => { ballSpin.side = Math.max(-1, ballSpin.side - 0.35); updateSpinHUD(); });
+        document.getElementById('spinRight').addEventListener('click', () => { ballSpin.side = Math.min(1, ballSpin.side + 0.35); updateSpinHUD(); });
+        document.getElementById('spinReset').addEventListener('click', () => { ballSpin = { top: 0, side: 0 }; updateSpinHUD(); });
+
+        function updateSpinHUD() {
+            let labelText = "";
+            if (ballSpin.top > 0) labelText += "Top ";
+            if (ballSpin.top < 0) labelText += "Back ";
+            if (ballSpin.side > 0) labelText += "R-Side ";
+            if (ballSpin.side < 0) labelText += "L-Side ";
+            spinDisplayEl.innerText = labelText === "" ? "NONE" : labelText;
+        }
+
+        // ORIENTATION DETECTION BANNER
+        function checkOrientation() {
+            if (window.innerHeight > window.innerWidth) {
+                orientationBanner.style.display = 'block';
+            } else {
+                orientationBanner.style.display = 'none';
+            }
+        }
+        window.addEventListener('resize', checkOrientation);
+        checkOrientation();
+
+        // RETURN TO MAIN MENU
+        mainMenuReturnBtn.addEventListener('click', () => {
+            gameActive = false;
+            menuScreen.classList.remove('hide');
+        });
+
+        // 🎇 START MATCH HANDLER
+        startBtn.addEventListener('click', () => {
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            currentGameMode = gameModeSelect.value;
+            playSound('pot');
+            menuScreen.classList.add('hide');
+            
+            gameActive = true;
+            initGame();
+            gameLoop();
+        });
+    </script>
+</body>
+</html>
